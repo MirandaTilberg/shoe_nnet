@@ -1,6 +1,6 @@
 library(keras)
 library(magrittr)
-install_keras()
+#install_keras()
 use_backend("tensorflow")
 
 gpu <- F
@@ -25,10 +25,10 @@ test_generator <- flow_images_from_directory(
 
 test_files <- list.files(test_dir, recursive = T, full.names = T)
 
-preds <- model %>% 
+preds <- model %>%
   predict_generator(test_generator, steps = length(test_files), verbose = 1)
 
-preds.df <- data.frame(round(preds,2))
+preds.df <- data.frame(round(preds, 2))
 names(preds.df) <- classes
 
 preds.df$pred <- classes[apply(preds, 1, which.max)]
