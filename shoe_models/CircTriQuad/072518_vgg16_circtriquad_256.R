@@ -7,12 +7,12 @@ gpu <- T
 
 
 name.file <- function(mod_num, ext) {
-  work_dir <- ifelse(gpu, "/work/CSAFE/", "~/shoe_nnet")
+  work_dir <- ifelse(gpu, "/work/CSAFE/", "~/shoe_nnet/")
   mod_type_dir = "shoe_models/CircTriQuad/"
   path <- paste(work_dir, mod_type_dir, sep = "")
   
   ### Change these if global variables change
-  date = "081418_"
+  date = "081518_"
   pretrained_base = "vgg16_"
   mod_type = "circtriquad_"
   pixel_size = "256_"
@@ -35,7 +35,7 @@ conv_base <- application_vgg16(
 
 # summary(conv_base)
 
-base_dir <- ifelse(gpu, "/work/CSAFE/shoes/circtriquad", "~/shoes/circtriquad")
+base_dir <- ifelse(gpu, "/work/CSAFE/shoes/circtriquad", "~/shoe_nnet/shoes/circtriquad")
 train_dir <- file.path(base_dir, "train")
 validation_dir <- file.path(base_dir, "validation")
 test_dir <- file.path(base_dir, "test")
