@@ -1,65 +1,64 @@
 library(shiny)
 library(dplyr)
-folder <- "onehot"
+library(data.table)
+library(DT)
+library(magrittr)
+
+folder <- "onehotV2"
 ui <- fluidPage(
-   
-   # Application title
-   titlePanel("Neural Network Shoeprint Shape Predictions"),
-   
-   # Sidebar with a slider input for number of bins 
-   #sidebarLayout(
-      #sidebarPanel(
-         # sliderInput("nplot",
-         #             "Number of images to display:",
-         #             min = 1, max = 1, value = 1),
-         # sliderInput("index",
-         #             "Index of image to display:",
-         #             min = 1, 
-         #             max = length(list.files(paste("www/", folder, sep=""))), 
-         #             value = 1)
-      #),
-      
-      # Show a plot of the generated distribution
-      mainPanel(
-        #imageOutput("file"),
-        #br(),
-        DT::dataTableOutput("test")
-        #DT::dataTableOutput("label")
-      )
-  # )
+  
+  # Application title
+  titlePanel("Neural Network Shoeprint Shape Predictions"),
+  
+  mainPanel(
+    DT::dataTableOutput("test")
+  )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  load("~/shoe_nnet/shoe_models/OneHot/081518_vgg16_onehot_256_2.Rdata")
+  # load("~/shoe_nnet/shoe_models/OneHot/081518_vgg16_onehot_256_2.Rdata")
+  load("~/shoe_nnet/shoe_models/OneHot/090818_vgg16_onehot_3class_256_2.Rdata")
   classes <- colnames(preds)
-  fnames <- list.files("~/shoe_nnet/nnet_pred_viewer/www/onehot")
+  fnames <- list.files("~/shoe_nnet/nnet_pred_viewer/www/onehotV2")
   truth <- test_labs
   colnames(truth) <- colnames(test_labs) %>% 
     paste("truth", ., sep="_")
   
-  output$file <- renderImage(fnames[input$index] %>%
-                               paste("www/onehot/", ., sep="") %>%
-                               list(src = ., width = "50%"),
-                             deleteFile = F)
+  # thresh <- 0.4
+  # 
+  # merged <- truth
+  # 
+  # for (i in 1:length(classes)) {
+  #   if
+  # }
+  #   
   
-  sprintf('<img src ="%s" width = "20%%"/>', fnames[1:5])
+  html_fnames <- sprintf('<img src ="%s" width = "100%%"/>', 
+                         #paste("onehotV1/", fnames, sep=""))
+                         paste("onehotV2/", fnames, sep=""))
   
-  library(data.table)
-  obj <- data.table({cbind(fnames, round(preds,2), truth)})
-  obj
+  obj <- data.table(cbind(Image = html_fnames, round(preds, 2), truth))
+  set.seed(1)
+  obj <- obj[sample(1:length(fnames), length(fnames)),]
   
-  output$test <- DT::renderDataTable(obj )
-
-  output$label <- DT::renderDataTable({rbind(preds[input$index,], 
-                                    test_labs[input$index,]) %>% 
-      round(2) %>%
-      set_rownames(c("pred", "truth")) %>%
-      formatStyle(paste("truth", classes[1], sep = "_"),
-                  )
-      })
-
+  output$test <- DT::renderDataTable({
+    datatable(obj,
+              escape = F,
+              extensions = c("FixedHeader"),
+              options = list(
+                fixedHeader = T,
+                columnDefs = list(list(targets = 
+                                         (ncol(obj)-length(classes)+1):(ncol(obj)), 
+                                       visible = FALSE))
+              )) %>%
+      formatStyle(classes, 
+                  valueColumns = paste("truth", classes, sep="_"), 
+                  target = "cell", 
+                  backgroundColor = styleEqual(1, "palegreen")
+      )
+  })
 }
 
 # Run the application 
