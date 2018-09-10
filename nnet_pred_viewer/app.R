@@ -45,10 +45,24 @@ server <- function(input, output) {
   colnames(truth) <- colnames(test_labs) %>% 
     paste("truth", ., sep="_")
   
+  
+  color_vals <- (2 * truth + preds) %>% round(2)
+  colnames(color_vals) <- paste("color", classes, sep="_")
+  #goodcol <- sample(c("palegreen", "cornflowerblue", "plum"), 1)
+  goodcol <- "cornflowerblue"
+  correct <- colorRampPalette(c("white", goodcol))
+  incorrect <- colorRampPalette(c("white", "grey30"))
+  
+  
+  html_urls <- sprintf("https://bigfoot.csafe.iastate.edu/rstudio/files/shoe_nnet/shoes/onehot/test/%s",
+                       fnames)
+
   html_fnames <- sprintf('<img src ="%s" width = "100%%"/>', 
                          paste(folder, fnames, sep="/"))
   
-  obj <- data.table(cbind(Image = html_fnames, round(preds, 2), truth))
+  hyperlinks <- sprintf('<a href="%s">%s</a>', html_urls, html_fnames)
+  
+  obj <- data.table(cbind(Image = hyperlinks, round(preds, 2), color_vals))
   set.seed(2)
   obj <- obj[sample(1:length(fnames), length(fnames)),]
   
@@ -64,9 +78,10 @@ server <- function(input, output) {
                                        visible = FALSE))
               )) %>%
       formatStyle(classes, 
-                  valueColumns = paste("truth", classes, sep="_"), 
-                  target = "cell", 
-                  backgroundColor = styleEqual(1, "palegreen")
+                  valueColumns = paste("color", classes, sep="_"), 
+                  target = "cell",
+                  backgroundColor = styleEqual(c(0:100, 200:300)/100,
+                                               c(incorrect(101), correct(141)[-(1:40)]))
       )
   })
 }
