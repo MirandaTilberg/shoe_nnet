@@ -3,8 +3,12 @@ library(keras)
 use_backend("tensorflow")
 #install_keras()
 
+
+### To train a new model, put desired classes into "classes" vector and
+##### change the date in name.file() (and other variables, if appropriate)
+
 gpu <- F
-classes <- c("bowtie", "chevron", "circle", "hexagon", 
+classes <- c("bowtie", "chevron", "circle", "hexagon",
              "quad", "star", "text", "triangle")
 
 name.file <- function(mod_num, ext) {
@@ -28,23 +32,34 @@ name.file <- function(mod_num, ext) {
   return(paste(path, filename, ext, sep = ""))
 }
 
-
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
-  input_shape = c(256, 256, length(classes))
+  input_shape = c(256, 256, 3)
 )
+
+
+### base_dir should contain the train, validation, 
+##### and test folders of desired images
 
 base_dir <- ifelse(gpu, "/work/CSAFE/shoes/onehot", "~/shoe_nnet/shoes/onehot")
 train_dir <- file.path(base_dir, "train")
-# dir.create(train_dir)
 validation_dir <- file.path(base_dir, "validation")
-# dir.create(validation_dir)
 test_dir <- file.path(base_dir, "test")
+
+
+### This code configures new images into folders for model training.
+##### It randomizes original images into train (50%), validation (25%), and
+##### test (25%) images. For a new set of images, change "all.images.folder"
+##### to reflect path containing all images (before sorting).
+
+# dir.create(train_dir)
+# dir.create(validation_dir)
 # dir.create(test_dir)
 
-# all.files <- list.files("~/shoe_nnet/shoes/original data/OneHotTestV2") %>%
-#   paste("~/shoe_nnet/shoes/original data/OneHotTestV2", ., sep = "/")
+# all.images.folder <- "~/shoe_nnet/shoes/original data/OneHotTestV2"
+# all.files <- list.files(all.images.folder) %>%
+#   paste(all.images.folder, ., sep = "/")
 # n <- length(all.files)
 # 
 # set.seed(1)
@@ -67,11 +82,13 @@ extract_features2 <- function(directory, sample_count, verbose = F) {
   
   for (i in 1:sample_count) {
     if (verbose) cat(paste(i, ", ", sep=""))
+    
     fname <- files[i]
     str <- substr(fname, 1, regexpr("-",fname)-1)
     for (j in 1:length(classes)) {
       labels[i, j] <- grepl(classes[j], str)
     }
+    
     # img <- load.image(file.path(directory, files[i]))
     img <- readJPEG(file.path(directory, files[i]))
     dim(img) <- c(1, 256, 256, 3)
@@ -89,9 +106,9 @@ n_validation <- length(list.files(validation_dir))
 n_test <- length(list.files(test_dir))
 
 
-save_train <- train <- extract_features2(train_dir, n_train, verbose = T)
-save_validation <- validation <- extract_features2(validation_dir, n_validation, verbose = T)
-save_test <- test <- extract_features2(test_dir, n_test, verbose = T)
+train <- extract_features2(train_dir, n_train, verbose = T)
+validation <- extract_features2(validation_dir, n_validation, verbose = T)
+test <- extract_features2(test_dir, n_test, verbose = T)
 
 
 reshape_features <- function(features) {
@@ -127,11 +144,11 @@ plot(history)
 dev.off()
 
 save_model_hdf5(model, name.file(2, ".h5"))
-model <- load_model_hdf5(name.file(2, ".h5"))
+# model <- load_model_hdf5(name.file(2, ".h5"))
 
 preds <- model %>% predict(test$features)
 test_labs <- test$labels
 
-colnames(preds) <- classes -> colnames(test_labs)
+colnames(preds) <- colnames(test_labs)<- classes
 save(preds, test_labs, file = name.file(2, ".Rdata"))
 base::save.image(name.file(0, ".RData"))
