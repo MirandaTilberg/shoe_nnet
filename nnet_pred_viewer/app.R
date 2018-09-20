@@ -41,8 +41,14 @@ server <- function(input, output) {
   })
 
   observe({
+    message(file_data())
+
     load(file_data())
 
+    validate(
+      need(exists("preds"), "preds is not loaded"),
+      need(exists("test_labs"), "preds is not loaded")
+    )
     classes <- colnames(preds)
     fnames <- list.files(paste("~/shoe_nnet/nnet_pred_viewer/www/",
                                folder, sep=""))
