@@ -40,7 +40,7 @@ server <- function(input, output) {
     model_info$data
   })
 
-  observe({
+  output$out <- DT::renderDataTable({
     message(file_data())
 
     load(file_data())
@@ -77,10 +77,7 @@ server <- function(input, output) {
     obj <- data.table(cbind(Image = hyperlinks, round(preds, 2), color_vals))
     set.seed(2)
     obj <- obj[sample(1:length(fnames), length(fnames)),]
-  })
 
-
-  output$out <- DT::renderDataTable({
     DT::datatable(obj,
               escape = F,
               extensions = c("FixedHeader"),
