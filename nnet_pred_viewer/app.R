@@ -34,16 +34,15 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   # Load Data
-  file_data <- reactive({
+  model_data <- reactive({
     # This should update when input$model updates
-    model_info <- filter(models, name == input$model)
-    model_info$data
+    filter(models, name == input$model)
   })
 
   output$out <- DT::renderDataTable({
-    message(file_data())
+    message(model_data())
 
-    load(file_data())
+    load(model_data()$data)
 
     validate(
       need(exists("preds"), "preds is not loaded"),
@@ -51,7 +50,7 @@ server <- function(input, output) {
     )
     classes <- colnames(preds)
     fnames <- list.files(paste("~/shoe_nnet/nnet_pred_viewer/www/",
-                               folder, sep=""))
+                               model_data()$imfolder, sep=""))
     truth <- test_labs
     colnames(truth) <- colnames(test_labs) %>%
       paste("truth", ., sep="_")
@@ -70,7 +69,7 @@ server <- function(input, output) {
     image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
 
     image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
-                          paste(folder, fnames, sep="/"))
+                          paste(model_data()$imfolder, fnames, sep="/"))
 
     hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
 
