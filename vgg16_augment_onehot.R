@@ -30,7 +30,7 @@ conv_base <- application_vgg16(
 )
 
 # This needs to be the home of the three image directories
-base_dir <- #file.path("/models/R_Preproccessed_Images", start_date)
+base_dir <- #file.path("/models/R_proccessed_images", start_date)
 train_dir <- file.path(base_dir, "train")
 validation_dir <- file.path(base_dir, "validation")
 test_dir <- file.path(base_dir, "test")

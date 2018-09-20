@@ -6,15 +6,17 @@ library(magrittr)
 
 models <- data_frame(
   name = c("onehotV1", "onehotV2 - 3 class", "onehotV2 - 8 class",
-           "onehotV2 - 12 class", "onehotV2 - 10 class", "aug - 8 class"),
-  imfolder = c("onehotV1", rep("onehotV2", 5)),
+           "onehotV2 - 12 class", "onehotV2 - 10 class", "aug - 8 class",
+           "aug - 10 class"),
+  imfolder = c("onehotV1", rep("onehotV2", 6)),
   data = paste0("~/shoe_nnet/shoe_models/OneHot/",
                 c("081518_vgg16_onehot_256_2.Rdata",
                   "090818_vgg16_onehot_3class_256_2.Rdata",
                   "090918_vgg16_onehot_8class_256_2.Rdata",
                   "091018_vgg16_onehot_12class_256_2.Rdata",
                   "091018_vgg16_onehot_10class_256_2.Rdata",
-                  "091818_vgg16_onehotaug_8class_256_2.Rdata")
+                  "091818_vgg16_onehotaug_8class_256_2.Rdata",
+                  "092018_vgg16_onehotaug_10class_256_2.Rdata")
   )
 )
 
@@ -56,10 +58,10 @@ server <- function(input, output) {
       paste("truth", ., sep="_")
 
     color_vals <- 2*(truth + 1) + (round(preds, 2))
+    # [2,3] -> gray, [4,5] -> blue
     colnames(color_vals) <- paste("color", classes, sep="_")
 
-    goodcol <- "cornflowerblue"
-    correct <- colorRampPalette(c("white", goodcol))
+    correct <- colorRampPalette(c("white", "cornflowerblue"))
     incorrect <- colorRampPalette(c("white", "grey40"))
 
 
@@ -84,8 +86,8 @@ server <- function(input, output) {
                 fixedHeader = T,
                 pageLength = 100,
                 autoWidth = FALSE,
-                columnDefs = list(list(targets =
-                                         (ncol(obj)-length(classes)+1):(ncol(obj)),
+                columnDefs = list(list(targets = tail(1:ncol(obj), length(classes)),
+                                         #(ncol(obj)-length(classes)+1):(ncol(obj)),
                                        visible = FALSE))
               )) %>%
       formatStyle(classes,
