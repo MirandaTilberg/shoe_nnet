@@ -8,12 +8,14 @@ models <- data_frame(
   name = c("onehotV1", "onehotV2 - 3 class", "onehotV2 - 8 class",
            "onehotV2 - 12 class", "onehotV2 - 10 class", "aug - 8 class"),
   imfolder = c("onehotV1", rep("onehotV2", 5)),
-  data = c("081518_vgg16_onehot_256_2.Rdata",
-           "090818_vgg16_onehot_3class_256_2.Rdata",
-           "090918_vgg16_onehot_8class_256_2.Rdata",
-           "091018_vgg16_onehot_12class_256_2.Rdata",
-           "091018_vgg16_onehot_10class_256_2.Rdata",
-           "091818_vgg16_onehotaug_8class_256_2.Rdata")
+  data = paste0("~/shoe_nnet/shoe_models/OneHot/",
+                c("081518_vgg16_onehot_256_2.Rdata",
+                  "090818_vgg16_onehot_3class_256_2.Rdata",
+                  "090918_vgg16_onehot_8class_256_2.Rdata",
+                  "091018_vgg16_onehot_12class_256_2.Rdata",
+                  "091018_vgg16_onehot_10class_256_2.Rdata",
+                  "091818_vgg16_onehotaug_8class_256_2.Rdata")
+  )
 )
 
 mod.num <- 6
