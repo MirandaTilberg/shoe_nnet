@@ -18,38 +18,6 @@ models <- data_frame(
   )
 )
 
-mod.num <- 6
-
-choose.model <- function(n) {
-  mod.path <- "~/shoe_nnet/shoe_models/OneHot/"
-
-  if (n==1) { #first onehot model, before quality control
-    mf <- "081518_vgg16_onehot_256_2.Rdata"
-    imfolder <- "onehotV1"
-  } else if (n==2) {
-    mf = "090818_vgg16_onehot_3class_256_2.Rdata"
-    imfolder <- "onehotV2"
-  } else if (n==3) {
-    mf = "090918_vgg16_onehot_8class_256_2.Rdata"
-    imfolder <- "onehotV2"
-  } else if (n==4) {
-    mf = "091018_vgg16_onehot_12class_256_2.Rdata"
-    imfolder <- "onehotV2"
-  } else if (n==5) {
-    mf = "091018_vgg16_onehot_10class_256_2.Rdata"
-    imfolder <- "onehotV2"
-  } else if (n==6) {
-    mf = "091818_vgg16_onehotaug_8class_256_2.Rdata"
-    imfolder <- "onehotV2"
-  } else {
-    return(choose.model(2))
-  }
-  return(list(model.file = paste(mod.path, mf, sep=""), folder = imfolder))
-}
-
-mod.list <- choose.model(mod.num)
-model.file <- mod.list$model.file
-folder <- mod.list$folder
 
 ui <- fluidPage(
 
@@ -59,7 +27,7 @@ ui <- fluidPage(
   mainPanel(
     width = 12,
     selectInput("model", label = "Select model", choices = models$name,
-                selected = 3),
+                selected = rev(models$name)[1]),
     DT::dataTableOutput("out",width = '100%')
   )
 )
@@ -72,7 +40,6 @@ server <- function(input, output) {
     load(model_info$data)
   })
 
-  load(model.file)
   classes <- colnames(preds)
   fnames <- list.files(paste("~/shoe_nnet/nnet_pred_viewer/www/",
                              folder, sep=""))
