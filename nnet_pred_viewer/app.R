@@ -34,40 +34,45 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   # Load Data
-  observe({
+  file_data <- reactive({
     # This should update when input$model updates
     model_info <- filter(models, name == input$model)
-    load(model_info$data)
+    model_info$data
   })
 
-  classes <- colnames(preds)
-  fnames <- list.files(paste("~/shoe_nnet/nnet_pred_viewer/www/",
-                             folder, sep=""))
-  truth <- test_labs
-  colnames(truth) <- colnames(test_labs) %>%
-    paste("truth", ., sep="_")
+  observe({
+    load(file_data())
 
-  color_vals <- 2*(truth + 1) + (round(preds, 2))
-  colnames(color_vals) <- paste("color", classes, sep="_")
+    classes <- colnames(preds)
+    fnames <- list.files(paste("~/shoe_nnet/nnet_pred_viewer/www/",
+                               folder, sep=""))
+    truth <- test_labs
+    colnames(truth) <- colnames(test_labs) %>%
+      paste("truth", ., sep="_")
 
-  goodcol <- "cornflowerblue"
-  correct <- colorRampPalette(c("white", goodcol))
-  incorrect <- colorRampPalette(c("white", "grey40"))
+    color_vals <- 2*(truth + 1) + (round(preds, 2))
+    colnames(color_vals) <- paste("color", classes, sep="_")
+
+    goodcol <- "cornflowerblue"
+    correct <- colorRampPalette(c("white", goodcol))
+    incorrect <- colorRampPalette(c("white", "grey40"))
 
 
-  # image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/rstudio/files/ShinyApps/NNPreview/www/%s/%s",
-  #                      folder, fnames)
-  whole_shoe <- stringr::str_replace_all(fnames, "^[[a-z\\(\\)RE]*_]*-[\\d\\.]*-", "")
-  image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
+    # image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/rstudio/files/ShinyApps/NNPreview/www/%s/%s",
+    #                      folder, fnames)
+    whole_shoe <- stringr::str_replace_all(fnames, "^[[a-z\\(\\)RE]*_]*-[\\d\\.]*-", "")
+    image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
 
-  image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
-                         paste(folder, fnames, sep="/"))
+    image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
+                          paste(folder, fnames, sep="/"))
 
-  hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
+    hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
 
-  obj <- data.table(cbind(Image = hyperlinks, round(preds, 2), color_vals))
-  set.seed(2)
-  obj <- obj[sample(1:length(fnames), length(fnames)),]
+    obj <- data.table(cbind(Image = hyperlinks, round(preds, 2), color_vals))
+    set.seed(2)
+    obj <- obj[sample(1:length(fnames), length(fnames)),]
+  })
+
 
   output$out <- DT::renderDataTable({
     DT::datatable(obj,
