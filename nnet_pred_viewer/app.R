@@ -15,7 +15,7 @@ models <- data_frame(
            "091018_vgg16_onehot_10class_256_2.Rdata")
 )
 
-mod.num <- 3
+mod.num <- 6
 
 choose.model <- function(n) {
   mod.path <- "~/shoe_nnet/shoe_models/OneHot/"
@@ -34,6 +34,9 @@ choose.model <- function(n) {
     imfolder <- "onehotV2"
   } else if (n==5) {
     mf = "091018_vgg16_onehot_10class_256_2.Rdata"
+    imfolder <- "onehotV2"
+  } else if (n==6) { 
+    mf = "091818_vgg16_onehotaug_8class_256_2.Rdata"
     imfolder <- "onehotV2"
   } else {
     return(choose.model(2))

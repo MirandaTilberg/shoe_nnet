@@ -17,9 +17,9 @@ name.file <- function(mod_num, ext) {
   path <- paste(work_dir, mod_type_dir, sep = "")
   
   ### Change these if global variables change
-  date = "090918_"
+  date = "091818_"
   pretrained_base = "vgg16_"
-  mod_type = "onehot_"
+  mod_type = "onehotaug_"
   nclass = paste(length(classes), "class_", sep="")
   pixel_size = "256_"
   if (mod_num == 0) {
@@ -43,7 +43,8 @@ conv_base <- application_vgg16(
 ##### and test folders of desired images
 
 base_dir <- ifelse(gpu, "/work/CSAFE/shoes/onehot", "~/shoe_nnet/shoes/onehot")
-train_dir <- file.path(base_dir, "train")
+# train_dir <- file.path(base_dir, "train")
+train_dir <- file.path(base_dir, "train_aug")
 validation_dir <- file.path(base_dir, "validation")
 test_dir <- file.path(base_dir, "test")
 
@@ -152,3 +153,4 @@ test_labs <- test$labels
 colnames(preds) <- colnames(test_labs)<- classes
 save(preds, test_labs, file = name.file(2, ".Rdata"))
 base::save.image(name.file(0, ".RData"))
+
