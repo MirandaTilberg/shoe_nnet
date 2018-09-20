@@ -6,13 +6,14 @@ library(magrittr)
 
 models <- data_frame(
   name = c("onehotV1", "onehotV2 - 3 class", "onehotV2 - 8 class",
-           "onehotV2 - 12 class", "onehotV2 - 10 class"),
-  imfolder = c("onehotV1", rep("onehotV2", 4)),
+           "onehotV2 - 12 class", "onehotV2 - 10 class", "aug - 8 class"),
+  imfolder = c("onehotV1", rep("onehotV2", 5)),
   data = c("081518_vgg16_onehot_256_2.Rdata",
            "090818_vgg16_onehot_3class_256_2.Rdata",
            "090918_vgg16_onehot_8class_256_2.Rdata",
            "091018_vgg16_onehot_12class_256_2.Rdata",
-           "091018_vgg16_onehot_10class_256_2.Rdata")
+           "091018_vgg16_onehot_10class_256_2.Rdata",
+           "091818_vgg16_onehotaug_8class_256_2.Rdata")
 )
 
 mod.num <- 6
@@ -35,7 +36,7 @@ choose.model <- function(n) {
   } else if (n==5) {
     mf = "091018_vgg16_onehot_10class_256_2.Rdata"
     imfolder <- "onehotV2"
-  } else if (n==6) { 
+  } else if (n==6) {
     mf = "091818_vgg16_onehotaug_8class_256_2.Rdata"
     imfolder <- "onehotV2"
   } else {
@@ -87,7 +88,7 @@ server <- function(input, output) {
 
   # image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/rstudio/files/ShinyApps/NNPreview/www/%s/%s",
   #                      folder, fnames)
-  whole_shoe <- stringr::str_replace_all(fnames, "^[[a-z\(\)RE]*_]*-[\\d\\.]*-", "")
+  whole_shoe <- stringr::str_replace_all(fnames, "^[[a-z\\(\\)RE]*_]*-[\\d\\.]*-", "")
   image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
 
   image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
