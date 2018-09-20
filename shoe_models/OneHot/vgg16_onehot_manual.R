@@ -8,8 +8,8 @@ use_backend("tensorflow")
 ##### change the date in name.file() (and other variables, if appropriate)
 
 gpu <- F
-classes <- c("bowtie", "chevron", "circle", "hexagon",
-             "quad", "star", "text", "triangle")
+classes <- c("bowtie", "chevron", "circle", "hexagon", "line",
+             "pentagon", "quad", "star", "text", "triangle")
 
 name.file <- function(mod_num, ext) {
   work_dir <- ifelse(gpu, "/work/CSAFE/", "~/shoe_nnet/")
@@ -17,7 +17,7 @@ name.file <- function(mod_num, ext) {
   path <- paste(work_dir, mod_type_dir, sep = "")
   
   ### Change these if global variables change
-  date = "091818_"
+  date = "092018_"
   pretrained_base = "vgg16_"
   mod_type = "onehotaug_"
   nclass = paste(length(classes), "class_", sep="")
@@ -150,7 +150,7 @@ save_model_hdf5(model, name.file(2, ".h5"))
 preds <- model %>% predict(test$features)
 test_labs <- test$labels
 
-colnames(preds) <- colnames(test_labs)<- classes
+colnames(preds) <- colnames(test_labs) <- classes
 save(preds, test_labs, file = name.file(2, ".Rdata"))
 base::save.image(name.file(0, ".RData"))
 
