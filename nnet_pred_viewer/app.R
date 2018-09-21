@@ -76,7 +76,7 @@ server <- function(input, output) {
     hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
 
     obj <- data.table(cbind(Image = hyperlinks, round(preds, 2), color_vals))
-    set.seed(2)
+    set.seed(3)
     obj <- obj[sample(1:length(fnames), length(fnames)),]
 
     DT::datatable(obj,

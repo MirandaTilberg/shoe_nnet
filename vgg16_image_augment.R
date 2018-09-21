@@ -4,16 +4,6 @@ use_backend("tensorflow")
 #install_keras()
 
 gpu <- F
-# classes <- c("bowtie", "chevron", "circle", "hexagon",
-#              "quad", "star", "text", "triangle")
-# 
-# load("~/shoe_nnet/shoe_models/OneHot/090918_vgg16_onehot_8class_256.RData")
-# 
-# conv_base <- application_vgg16(
-#   weights = "imagenet",
-#   include_top = FALSE,
-#   input_shape = c(256, 256, 3)
-# )
 
 base_dir <- ifelse(gpu, "/work/CSAFE/shoes/onehot", "~/shoe_nnet/shoes/onehot")
 train_dir <- file.path(base_dir, "train")
