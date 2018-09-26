@@ -12,7 +12,14 @@ classes <- c("bowtie", "chevron", "circle", "hexagon", "line",
 
 work_dir <- "/models/shoe_nn/TrainedModels"
 start_date <- Sys.Date()
-model_dir <- file.path(work_dir, start_date)
+
+processed_img_folder <- list.files("/models/shoe_nn/RProcessedImages/") %>% 
+  as_datetime() %>%
+  max(na.rm = T) %>%
+  gsub("[^0-9\\ ]", "", .) %>%
+  gsub(" ", "-", .)
+
+model_dir <- file.path(work_dir, processed_img_folder)
 dir.create(model_dir)
 
 name_file <- function(date, ext) {
@@ -21,23 +28,19 @@ name_file <- function(date, ext) {
   nclass = paste0(length(classes), "class")
   pixel_size = "256"
   
-  filename <- paste(pretrained_base, mod_type, nclass, 
-                    pixel_size, sep = "_")
+  filename <- paste(date, pretrained_base, mod_type, 
+                    nclass, pixel_size, sep = "_")
   
   file.path(model_dir, filename) %>%
     paste0(., ext)
 }
 
-processed_img_folder <- list.files("/models/shoe_nn/RProcessedImages/") %>% 
-  as_datetime() %>%
-  max(na.rm = T) %>%
-  gsub("[^0-9\\ ]", "", .) %>%
-  gsub(" ", "-", .)
-
 base_dir <- file.path("/models/shoe_nn/RProcessedImages", processed_img_folder)
 train_dir <- file.path(base_dir, "train")
 validation_dir <- file.path(base_dir, "validation")
 test_dir <- file.path(base_dir, "test")
+
+
 
 n_train <- length(list.files(train_dir))
 n_validation <- length(list.files(validation_dir))
@@ -46,39 +49,45 @@ n_test <- length(list.files(test_dir))
 img_names <- list.files(train_dir) %>% str_remove(., ",jpg")
 img_loc <- list.files(train_dir, full.names = T)
 
-for (i in 1:n_train) {
-  
-  img <- readJPEG(img_loc[i])
-  dim(img) <- c(1, dim(img))
-  
-  aug_generator <- image_data_generator(rotation_range = 40,
-                                        width_shift_range = 0.05,
-                                        height_shift_range = 0.05,
-                                        shear_range = 0.4,
-                                        zoom_range = 0.1,
-                                        horizontal_flip = TRUE)
-  
-  images_iter <- flow_images_from_data(
-    x = img, y = NULL,
-    generator = aug_generator,
-    batch_size = 1,
-    save_to_dir = train_aug_dir,
-    save_prefix = paste("aug", img_names[i], sep="_"),
-    save_format = "jpeg"
-  )
-  
-  reticulate::iter_next(images_iter)
-  reticulate::iter_next(images_iter)
-  reticulate::iter_next(images_iter)
-}
+### if we decide to reaugment, this will remove augmented images
+# file.remove(list.files(train_dir, pattern = "aug_", full.names = T))
 
+### if we keep previously augmented images, run this as-is
+if (length(list.files(train_dir, pattern = "aug_")) <= 2000) {
+  
+  for (i in 1:n_train) {
+    
+    img <- readJPEG(img_loc[i])
+    dim(img) <- c(1, dim(img))
+    
+    aug_generator <- image_data_generator(rotation_range = 40,
+                                          width_shift_range = 0.05,
+                                          height_shift_range = 0.05,
+                                          shear_range = 0.4,
+                                          zoom_range = 0.1,
+                                          horizontal_flip = TRUE)
+    
+    images_iter <- flow_images_from_data(
+      x = img, y = NULL,
+      generator = aug_generator,
+      batch_size = 1,
+      save_to_dir = train_aug_dir,
+      save_prefix = paste("aug", img_names[i], sep="_"),
+      save_format = "jpeg"
+    )
+    
+    reticulate::iter_next(images_iter)
+    reticulate::iter_next(images_iter)
+    reticulate::iter_next(images_iter)
+  }
+  
+}
 
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
   input_shape = c(256, 256, 3)
 )
-
 
 extract_features2 <- function(directory, sample_count) {
   features <- array(0, dim = c(sample_count, 8, 8, 512))  

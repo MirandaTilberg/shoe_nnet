@@ -3,7 +3,6 @@ library(keras)
 use_backend("tensorflow")
 #install_keras()
 
-
 ### To train a new model, put desired classes into "classes" vector and
 ##### change the date in name.file() (and other variables, if appropriate)
 
@@ -17,7 +16,7 @@ name.file <- function(mod_num, ext) {
   path <- paste(work_dir, mod_type_dir, sep = "")
   
   ### Change these if global variables change
-  date = "092018_"
+  date = "092518_"
   pretrained_base = "vgg16_"
   mod_type = "onehotaug_"
   nclass = paste(length(classes), "class_", sep="")
@@ -70,7 +69,7 @@ test_dir <- file.path(base_dir, "test")
 # file.copy(fnames[(round(3*n/4)+1):n], test_dir)
 
 
-datagen <- image_data_generator(rescale = 1/255)
+#datagen <- image_data_generator(rescale = 1/255)
 
 extract_features2 <- function(directory, sample_count, verbose = F) {
   #library(imager)
