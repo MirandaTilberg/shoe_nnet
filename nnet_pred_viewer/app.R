@@ -4,6 +4,8 @@ library(data.table)
 library(DT)
 library(magrittr)
 
+addResourcePath("imgs", "/models/shoe_nn/RProcessedImages/")
+
 models <- data_frame(
   name = c("onehotV1", "onehotV2 - 3 class", "onehotV2 - 8 class",
            "onehotV2 - 12 class", "onehotV2 - 10 class", "aug - 8 class",
@@ -22,16 +24,22 @@ models <- data_frame(
 
 auto_models <- list.files("/models/shoe_nn/TrainedModels", ".[rR]data", recursive = T, full.names = T)
 auto_models <- auto_models[!grepl("fullimage.rdata", auto_models)]
-auto_model_date <- stringr::str_extract(auto_models, "201\\d\\d{2}\\d{2}")
+auto_model_date <- stringr::str_extract(auto_models, "201\\d\\d{2}\\d{2}-\\d{2}\\d{2}\\d{2}")
 auto_model_nicedate <- auto_model_date %>%
-  stringr::str_replace("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3")
+  stringr::str_replace("(\\d{4})(\\d{2})(\\d{2})-(\\d{2})(\\d{2})(\\d{2})", "\\1-\\2-\\3 \\4:\\5:\\6")
+
+file.symlink(from = file.path("/models/shoe_nn/RProcessedImages", 
+                              unique(auto_model_date)),
+             to = file.path(getwd(), "www", unique(auto_model_date)))
+
+
 models2 <- data_frame(
   name = paste(auto_model_nicedate, "10class aug"),
-  imfolder = file.path("/models/shoe_nn/RProcessedImages", auto_model_date),
+  imfolder = file.path(auto_model_date, "test"),
   data = auto_models
 )
 
-
+models <- bind_rows(models, models2)
 ui <- fluidPage(
 
   # Application title
@@ -82,12 +90,12 @@ server <- function(input, output) {
     image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
 
     image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
-                          paste(model_data()$imfolder, fnames, sep="/"))
+                          paste("imgs", fnames, sep="/"))
 
     hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
 
     obj <- data.table(cbind(Image = hyperlinks, round(preds, 2), color_vals))
-    set.seed(3)
+    set.seed(2)
     obj <- obj[sample(1:length(fnames), length(fnames)),]
 
     DT::datatable(obj,
