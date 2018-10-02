@@ -13,7 +13,7 @@ train_dir <- file.path(base_dir, "train")
 validation_dir <- file.path(base_dir, "validation")
 test_dir <- file.path(base_dir, "test")
 
-train_aug_dir <- file.path(base_dir, "train_aug_exp7")
+train_aug_dir <- file.path(base_dir, "train_aug")
 suppressWarnings(dir.create(train_aug_dir))
 
 n_train <- length(list.files(train_dir))
@@ -25,9 +25,10 @@ fnames <- list.files(train_dir)
 fnames.front <- str_remove(fnames, ".jpg")
 
 if (length(list.files(train_aug_dir, pattern = "aug_")) < 2000) {
-  #for (i in 1:n_train) {
-  vec <- sample(1:n_train, 50)
-  for (i in vec) {
+  
+  for (i in 1:n_train) {
+  # vec <- sample(1:n_train, 50)
+  # for (i in vec) {
     cat(paste(i, ", ", sep = ""))
     img.loc <- file.path(train_dir, fnames[i])
     file.copy(from = img.loc, to = train_aug_dir)
@@ -65,7 +66,8 @@ if (length(list.files(train_aug_dir, pattern = "aug_")) < 2000) {
 if(view) {
   library(imager)
   
-  choice <- sample(vec,1)#8083 #sample(1:11318, 1)
+  choice <- sample(1:n_train, 1) #8083
+  # choice <- sample(vec,1)
   aug_files <- list.files(train_aug_dir)
   aug_files_full <- list.files(train_aug_dir, full.names = T)
 
