@@ -1,9 +1,11 @@
 ########## Choose model file and detect classes
-load("/home/tiltonm/shoe_nnet/shoe_models/OneHot/092018_vgg16_onehotaug_10class_256_2.Rdata")
+#load("/home/tiltonm/shoe_nnet/shoe_models/OneHot/092018_vgg16_onehotaug_10class_256_2.Rdata")
+#load("/home/tiltonm/shoe_nnet/shoe_models/OneHot/092518_vgg16_onehotaug_10class_256_2.Rdata")
 #load("/models/shoe_nn/TrainedModels/20180926-163248/2018-09-27_11:35:00_vgg16_onehotaug_10class_256.Rdata")
 #load("/models/shoe_nn/TrainedModels/20180927-165955/2018-09-27_17:50:21_vgg16_onehotaug_10class_256.Rdata")
 #load("/models/shoe_nn/TrainedModels/20180930-150047/2018-09-30_17:52:12_vgg16_onehotaug_10class_256.Rdata")
 #load("/models/shoe_nn/TrainedModels/20180930-211352/2018-10-01_17:50:56_vgg16_onehotaug_10class_256.Rdata")
+#load("/models/shoe_nn/TrainedModels/")
 
 classes <- colnames(preds)
 n_per_class <- apply(test_labs, 2, sum)
@@ -58,5 +60,5 @@ quantity_plot <- ggcorrplot2(class_rel, limit = c(0, max(class_rel)),
         axis.title.y = ggplot2::element_blank())
 
 conf_plot
-#quantity_plot
+quantity_plot
 
