@@ -4,14 +4,15 @@ library(data.table)
 library(DT)
 library(magrittr)
 
-addResourcePath("imgs", "/models/shoe_nn/RProcessedImages/")
+imgs <- "/models/shoe_nn/RProcessedImages"
+modelres <- "/models/shoe_nn/TrainedModels"
 
 models <- data_frame(
   name = c("onehotV1", "onehotV2 - 3 class", "onehotV2 - 8 class",
            "onehotV2 - 12 class", "onehotV2 - 10 class", "aug - 8 class",
            "aug - 10 class"),
   imfolder = c("onehotV1", rep("onehotV2", 6)),
-  data = paste0("~/shoe_nnet/shoe_models/OneHot/",
+  data = paste0("/home/tiltonm/shoe_nnet/shoe_models/OneHot/",
                 c("081518_vgg16_onehot_256_2.Rdata",
                   "090818_vgg16_onehot_3class_256_2.Rdata",
                   "090918_vgg16_onehot_8class_256_2.Rdata",
@@ -22,13 +23,13 @@ models <- data_frame(
   )
 )
 
-auto_models <- list.files("/models/shoe_nn/TrainedModels", ".[rR]data", recursive = T, full.names = T)
+auto_models <- list.files("/models/shoe_nn/TrainedModels", ".[rR]data", recursive = T)
 auto_models <- auto_models[!grepl("fullimage.rdata", auto_models)]
 auto_model_date <- stringr::str_extract(auto_models, "201\\d\\d{2}\\d{2}-\\d{2}\\d{2}\\d{2}")
 auto_model_nicedate <- auto_model_date %>%
   stringr::str_replace("(\\d{4})(\\d{2})(\\d{2})-(\\d{2})(\\d{2})(\\d{2})", "\\1-\\2-\\3 \\4:\\5:\\6")
 
-file.symlink(from = file.path("/models/shoe_nn/RProcessedImages", 
+file.symlink(from = file.path("/models/shoe_nn/RProcessedImages",
                               unique(auto_model_date)),
              to = file.path(getwd(), "www", unique(auto_model_date)))
 
@@ -54,6 +55,10 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
+
+  addResourcePath("imgs", "/models/shoe_nn/RProcessedImages/")
+  addResourcePath("modelres", "/models/shoe_nn/TrainedModels/")
+
   # Load Data
   model_data <- reactive({
     # This should update when input$model updates
@@ -61,17 +66,20 @@ server <- function(input, output) {
   })
 
   output$out <- DT::renderDataTable({
-    message(model_data())
+    message(model_data()$data)
 
-    load(model_data()$data)
+    load(file.path(modelres, model_data()$data))
 
     validate(
       need(exists("preds"), "preds is not loaded"),
       need(exists("test_labs"), "preds is not loaded")
     )
+
     classes <- colnames(preds)
-    fnames <- list.files(paste("~/shoe_nnet/nnet_pred_viewer/www/",
-                               model_data()$imfolder, sep=""))
+    fnames <- list.files(file.path(imgs, model_data()$imfolder))
+
+    head(fnames)
+
     truth <- test_labs
     colnames(truth) <- colnames(test_labs) %>%
       paste("truth", ., sep="_")
@@ -90,7 +98,7 @@ server <- function(input, output) {
     image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
 
     image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
-                          paste("imgs", fnames, sep="/"))
+                          file.path("imgs", stringr::str_replace(model_data()$imfolder, "test", "images"), fnames))
 
     hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
 
@@ -120,6 +128,6 @@ server <- function(input, output) {
 }
 
 # Run the application
-setwd("~/shoe_nnet/nnet_pred_viewer/")
+# setwd("~/shoe_nnet/nnet_pred_viewer/")
 shinyApp(ui = ui, server = server)
 
