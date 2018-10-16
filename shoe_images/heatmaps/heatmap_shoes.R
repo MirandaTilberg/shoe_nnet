@@ -1,47 +1,74 @@
+#image_border
 library(keras)
 library(magrittr)
 library(jpeg)
 library(imager)
 library(tidyr)
+library(dplyr)
 library(magick) 
 library(viridis)
 
+classes <- c("bowtie", "chevron", "circle", "hexagon", "line",
+             "pentagon", "quad", "star", "text", "triangle")
+
+
 # Set parameters for saving files
 path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps"
+
 folder <- "shoes-"
 index <- 1#sample(1:5659, 1)
 prefix <- paste0(folder,as.character(index), "_")
 
 
 # Choose image and extract model predictions
-#model <- application_vgg16(weights = "imagenet")
 model <- keras::load_model_hdf5("~/shoe_nnet/shoe_models/OneHot/092518_vgg16_onehotaug_10class_256_2.h5")
-model <- keras::load_model_hdf5("/models/shoe_nn/TrainedModels/20181011-145609/2018-10-14_18:05:19_vgg16_onehotaug_9class_256.h5")
 img_path <- list.files("shoes/onehot/test", full.names = T)[index] #1:5659
 # img <- image_load(img_path, target_size = c(256, 256)) %>%
 #   image_to_array() %>%
 #   array_reshape(dim = c(1, 256, 256, 3)) %>%
 #   imagenet_preprocess_input()
+
+
 # plot(image_load(img_path))
 # plot(img)
+
+summary(model)
+summary(application_vgg16())
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
   input_shape = c(256, 256, 3)
 )
 
+# test <- application_vgg16(
+#   input_shape = c(256, 256, 3),
+#   include_top = TRUE,
+#   weights = "/home/tiltonm/shoe_nnet/shoe_models/OneHot/101518_vgg16_onehotaug_10class_256_wts.h5"
+# )
+
+
 img <- readJPEG(img_path)
 dim(img) <- c(1, 256, 256, 3)
-features <- conv_base %>% predict(img)
+features <- conv_base %>% predict(img) %>%
+  array_reshape(., dim = c(1, 8 * 8 * 512))
 
-preds <- model %>% predict(features)
+preds <- model %>% predict(features) %>%
+  round(.,3)
+k <- which.max(preds)
+
+preds <- preds %>%
+  rbind(classes, .) %>%
+  t
+
+preds <- preds[order(preds[,2], decreasing = T),]
+preds_df <- data.frame(preds, stringsAsFactors = F)
 #imagenet_decode_predictions(preds, top = 3)[[1]]
 
 # Format predictions and save as label image
-preds_df <- imagenet_decode_predictions(preds, top = 3)[[1]][,2:3]
+#preds_df <- imagenet_decode_predictions(preds, top = 3)[[1]][,2:3]
 names(preds_df) <- c("class", "p")
-preds_df$p <- round(preds_df$p, 3)
-labels <- unite(preds_df, sep = ": ")[,1,drop=T]
+#preds_df$p <- round(preds_df$p, 3)
+labels <- unite(preds_df[1:3,], sep = ": ")[,1,drop=T]
 
 labels_file <- file.path(path, paste0(prefix, "labels", ".png"))
 
@@ -56,8 +83,8 @@ label_img <- crop.borders(load.image(labels_file), nx = 96, ny = 100/2)
 imager::save.image(im = label_img, file = labels_file)
 
 # Create heatmap image
-img_output <- model$output[,which.max(preds)]
-last_conv_layer <- model %>% get_layer("block5_conv3")
+img_output <- model$output[,k]
+last_conv_layer <- conv_base %>% get_layer("block5_conv3")
 grads <- k_gradients(img_output, last_conv_layer$output)[[1]]
 pooled_grads <- k_mean(grads, axis = c(1, 2, 3))
 iterate <- k_function(list(model$input),
