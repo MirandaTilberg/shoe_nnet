@@ -25,18 +25,19 @@ models <- data_frame(
 
 auto_models <- list.files("/models/shoe_nn/TrainedModels", ".[rR]data", recursive = T)
 auto_models <- auto_models[!grepl("fullimage.rdata", auto_models)]
-auto_model_date <- stringr::str_extract(auto_models, "201\\d\\d{2}\\d{2}-\\d{2}\\d{2}\\d{2}")
+auto_model_data_date <- stringr::str_extract(auto_models, "201\\d\\d{2}\\d{2}-\\d{2}\\d{2}\\d{2}")
+auto_model_date <- stringr::str_extract(auto_models, "201\\d-\\d{2}-\\d{2}[ _]\\d{2}:\\d{2}:\\d{2}")
 auto_model_nicedate <- auto_model_date %>%
-  stringr::str_replace("(\\d{4})(\\d{2})(\\d{2})-(\\d{2})(\\d{2})(\\d{2})", "\\1-\\2-\\3 \\4:\\5:\\6")
+  stringr::str_replace("_", " ")
 
 file.symlink(from = file.path("/models/shoe_nn/RProcessedImages",
-                              unique(auto_model_date)),
-             to = file.path(getwd(), "www", unique(auto_model_date)))
+                              unique(auto_model_data_date)),
+             to = file.path(getwd(), "www", unique(auto_model_data_date)))
 
 
 models2 <- data_frame(
   name = paste(auto_model_nicedate, "10class aug"),
-  imfolder = file.path(auto_model_date, "test"),
+  imfolder = file.path(auto_model_data_date, "test"),
   data = auto_models
 )
 
