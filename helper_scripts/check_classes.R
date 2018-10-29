@@ -2,6 +2,7 @@
 ##### "hexagon" and "pentagon" are considered separately or together as
 ##### "polygon". It returns the appropriate vector of classes for the directory.
 
+library(magrittr)
 check_classes <- function(dir) {
   str <- list.files(dir) %>% 
     substr(., 1, regexpr("-", .) - 1)
@@ -20,7 +21,8 @@ check_classes <- function(dir) {
 }
 
 ## test
-# check_classes("/models/shoe_nn/RProcessedImages/20180921-110941/test/")
+ check_classes("/models/shoe_nn/RProcessedImages/20180921-110941/test/")
+ check_classes("/models/shoe_nn/RProcessedImages/20181023-162730/test/")
 
 
 

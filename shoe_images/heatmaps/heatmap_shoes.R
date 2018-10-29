@@ -21,39 +21,32 @@ prefix <- paste0(folder,as.character(index), "_")
 
 
 # Choose image and extract model predictions
-model <- keras::load_model_hdf5("~/shoe_nnet/shoe_models/OneHot/092518_vgg16_onehotaug_10class_256_2.h5")
+#model_head <- keras::load_model_hdf5("~/shoe_nnet/shoe_models/OneHot/092518_vgg16_onehotaug_10class_256_2.h5")
+model <- load_model_hdf5("~/shoe_nnet/combined_2018-10-25_14:03:33.h5")
 img_path <- list.files("shoes/onehot/test", full.names = T)[index] #1:5659
-# img <- image_load(img_path, target_size = c(256, 256)) %>%
-#   image_to_array() %>%
-#   array_reshape(dim = c(1, 256, 256, 3)) %>%
-#   imagenet_preprocess_input()
 
 
-# plot(image_load(img_path))
-# plot(img)
+"shoes/onehot/test/bowtie-10-birkenstock-arizona-oiled-leather-unisex-habana-oiled-leather_product_7503952_color_208913.jpg"
 
-summary(model)
-summary(application_vgg16())
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
   input_shape = c(256, 256, 3)
 )
-
-# test <- application_vgg16(
-#   input_shape = c(256, 256, 3),
-#   include_top = TRUE,
-#   weights = "/home/tiltonm/shoe_nnet/shoe_models/OneHot/101518_vgg16_onehotaug_10class_256_wts.h5"
-# )
+# 
+# model_full <- keras_model_sequential() %>%
+#   conv_base %>%
+#   model_head
 
 
 img <- readJPEG(img_path)
 dim(img) <- c(1, 256, 256, 3)
-features <- conv_base %>% predict(img) %>%
-  array_reshape(., dim = c(1, 8 * 8 * 512))
-
-preds <- model %>% predict(features) %>%
-  round(.,3)
+# features <- conv_base %>% predict(img) %>%
+#   array_reshape(., dim = c(1, 8 * 8 * 512))
+# 
+# preds <- model %>% predict(features) %>%
+#   round(.,3)
+preds <- model %>% predict(img) %>% round(.,3)
 k <- which.max(preds)
 
 preds <- preds %>%
@@ -84,7 +77,8 @@ imager::save.image(im = label_img, file = labels_file)
 
 # Create heatmap image
 img_output <- model$output[,k]
-last_conv_layer <- conv_base %>% get_layer("block5_conv3")
+summary(model)
+last_conv_layer <- model %>% get_layer("block5_conv3")
 grads <- k_gradients(img_output, last_conv_layer$output)[[1]]
 pooled_grads <- k_mean(grads, axis = c(1, 2, 3))
 iterate <- k_function(list(model$input),
