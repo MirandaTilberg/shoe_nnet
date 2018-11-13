@@ -1,5 +1,4 @@
 library(keras)
-library(magrittr)
 library(imager)
 library(tidyr)
 library(magick) 
@@ -13,7 +12,7 @@ prefix <- paste0(folder,as.character(index), "_")
 
 # Choose image and extract model predictions
 model <- application_vgg16(weights = "imagenet")
-img_path <- list.files("shoes/onehot/test/", full.names = T)[index] #1:5659
+img_path <- list.files("shoes/onehot/test", full.names = T)[index] #1:5659
 img <- image_load(img_path, target_size = c(224, 224)) %>%
   image_to_array() %>%
   array_reshape(dim = c(1, 224, 224, 3)) %>%

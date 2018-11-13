@@ -1,96 +1,66 @@
-#image_border
 library(keras)
-library(magrittr)
-library(jpeg)
 library(imager)
 library(tidyr)
-library(dplyr)
 library(magick) 
 library(viridis)
 
-classes <- c("bowtie", "chevron", "circle", "hexagon", "line",
-             "pentagon", "quad", "star", "text", "triangle")
+# Load trained model and choose image ---------------------------------------
 
+model_wts_file <- "~/shoe_nnet/test_wts.h5"
 
-# Set parameters for saving files
-path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps"
-
-folder <- "shoes-"
-index <- 1#sample(1:5659, 1)
-prefix <- paste0(folder,as.character(index), "_")
-
-
-# Choose image and extract model predictions
-#model_head <- keras::load_model_hdf5("~/shoe_nnet/shoe_models/OneHot/092518_vgg16_onehotaug_10class_256_2.h5")
-model <- load_model_hdf5("~/shoe_nnet/combined_2018-10-25_14:03:33.h5")
-img_path <- list.files("shoes/onehot/test", full.names = T)[index] #1:5659
-
-
-"shoes/onehot/test/bowtie-10-birkenstock-arizona-oiled-leather-unisex-habana-oiled-leather_product_7503952_color_208913.jpg"
+input <- layer_input(shape = c(256, 256, 3))
 
 conv_base <- application_vgg16(
   weights = "imagenet",
   include_top = FALSE,
-  input_shape = c(256, 256, 3)
-)
-# 
-# model_full <- keras_model_sequential() %>%
-#   conv_base %>%
-#   model_head
+  input_tensor = input)
+
+output <- conv_base$output %>%
+  layer_flatten(input_shape = input) %>%
+  layer_dense(units = 256, activation = "relu",
+              input_shape = 8 * 8 * 512) %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 9, activation = "sigmoid")
+
+model <- keras_model(input, output)
+
+load_model_weights_hdf5(model, model_wts_file, by_name = T)
 
 
-img <- readJPEG(img_path)
+# Use trained model to make heatmaps for each class -------------------------
+
+### Parameters for saving files
+
+dir_path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps"
+image_dir <- "/home/tiltonm/shoe_nnet/shoes/onehot/test"
+
+name <- "shoes-"
+index <- sample(1:length(list.files(image_dir)), 1)
+prefix <- paste0(name,as.character(index), "_")
+
+path <- file.path(dir_path, prefix)
+# if (file.exists(path)) {
+#   prefix <- paste0(prefix, "(1)_")
+#   path <- file.path(dir_path, prefix)
+#   
+# }
+dir.create(path)
+
+img_path <- list.files(image_dir, full.names = T)[index]
+img <- load.image(img_path)
 dim(img) <- c(1, 256, 256, 3)
-# features <- conv_base %>% predict(img) %>%
-#   array_reshape(., dim = c(1, 8 * 8 * 512))
-# 
-# preds <- model %>% predict(features) %>%
-#   round(.,3)
-preds <- model %>% predict(img) %>% round(.,3)
-k <- which.max(preds)
 
-preds <- preds %>%
-  rbind(classes, .) %>%
-  t
+file.copy(img_path, path)
 
-preds <- preds[order(preds[,2], decreasing = T),]
-preds_df <- data.frame(preds, stringsAsFactors = F)
-#imagenet_decode_predictions(preds, top = 3)[[1]]
 
-# Format predictions and save as label image
-#preds_df <- imagenet_decode_predictions(preds, top = 3)[[1]][,2:3]
-names(preds_df) <- c("class", "p")
-#preds_df$p <- round(preds_df$p, 3)
-labels <- unite(preds_df[1:3,], sep = ": ")[,1,drop=T]
-
-labels_file <- file.path(path, paste0(prefix, "labels", ".png"))
-
-png(labels_file, width = 2*224, height = 2*100)
-plot(c(0, 1), c(.2,.85), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
-text(x = 0.45, y = .72, cex = 1.8, col = "black", labels[1])
-text(x = 0.45, y = .5, cex = 1.8, col = "black", labels[2])
-text(x = 0.45, y = .28, cex = 1.8, col = "black", labels[3])
-dev.off()
-
-label_img <- crop.borders(load.image(labels_file), nx = 96, ny = 100/2)
-imager::save.image(im = label_img, file = labels_file)
-
-# Create heatmap image
-img_output <- model$output[,k]
-summary(model)
-last_conv_layer <- model %>% get_layer("block5_conv3")
-grads <- k_gradients(img_output, last_conv_layer$output)[[1]]
-pooled_grads <- k_mean(grads, axis = c(1, 2, 3))
-iterate <- k_function(list(model$input),
-                      list(pooled_grads, last_conv_layer$output[1,,,]))
-c(pooled_grads_value, conv_layer_output_value) %<-% iterate(list(img))
-for (i in 1:512) {
-  conv_layer_output_value[,,i] <- 
-    conv_layer_output_value[,,i] * pooled_grads_value[[i]] 
+# Heatmap helper functions
+plot_heatmap <- function(heatmap, width = 224, height = 224,
+                         bg = "white", col = terrain.colors(12)) {
+  op = par(mar = c(0,0,0,0))
+  on.exit({par(op)}, add = TRUE)
+  rotate <- function(x) t(apply(x, 2, rev))
+  image(rotate(heatmap), axes = FALSE, asp = 1, col = col)
 }
-heatmap <- apply(conv_layer_output_value, c(1,2), mean)
-heatmap <- pmax(heatmap, 0) 
-heatmap <- heatmap / max(heatmap)
 
 write_heatmap <- function(heatmap, filename, width = 224, height = 224,
                           bg = "white", col = terrain.colors(12)) {
@@ -101,54 +71,110 @@ write_heatmap <- function(heatmap, filename, width = 224, height = 224,
   image(rotate(heatmap), axes = FALSE, asp = 1, col = col)
 }
 
-heatmap_file <- file.path(path, paste0(prefix, "heatmap", ".png"))
-write_heatmap(heatmap, heatmap_file) 
+
+predictions <- model %>% predict(img)
+#classes <- c("bowtie", "chevron", "circle", "hexagon", "line", 
+#             "pentagon", "quad", "star", "text", "triangle")
+classes <- c("bowtie", "chevron", "circle","line", 
+             "polygon", "quad", "star", "text", "triangle")
+n_classes <- length(classes)
 
 
-# Read the original image and it's geometry
+heatmap <- array(dim = c(n_classes, 16, 16))
+par(mfrow = c(3,4))
+successful_heatmap <- c()
+
+for (j in 1:n_classes) {
+  
+  img_output <- model$output[,j]
+  
+  last_conv_layer <- model %>% get_layer("block5_conv3")
+  grads <- k_gradients(img_output, last_conv_layer$output)[[1]]
+  
+  # finish making the heatmap
+  pooled_grads <- k_mean(grads, axis = c(1, 2, 3))
+  iterate <- k_function(list(model$input),
+                        list(pooled_grads, last_conv_layer$output[1,,,]))
+  c(pooled_grads_value, conv_layer_output_value) %<-% iterate(list(img))
+  for (i in 1:512) {
+    conv_layer_output_value[,,i] <-
+      conv_layer_output_value[,,i] * pooled_grads_value[[i]]
+  }
+  heatmap[j,,] <- apply(conv_layer_output_value, c(1,2), mean)
+  heatmap[j,,] <- pmax(heatmap[j,,], 0)
+  heatmap[j,,] <- heatmap[j,,] / max(heatmap[j,,])
+  
+  
+  if (!anyNA(heatmap[j,,])) {
+    successful_heatmap <- c(successful_heatmap, j)
+    
+  }
+}
+
+successful_heatmap
+
+if (is.null(successful_heatmap)) {
+  
+  unlink(path, recursive = T)
+  
+} else{
+  
 image <- image_read(img_path)
 info <- image_info(image) 
 geometry <- sprintf("%dx%d!", info$width, info$height) 
 
-# Create a blended / transparent version of the heatmap image
+
 pal <- col2rgb(viridis(20), alpha = TRUE) 
 alpha <- floor(seq(0, 255, length = ncol(pal))) 
 pal_col <- rgb(t(pal), alpha = alpha, maxColorValue = 255)
 
-overlay_file <- file.path(path, paste0(prefix, "overlay", ".png"))
-write_heatmap(heatmap, overlay_file, 
-              width = 14, height = 14, bg = NA, col = pal_col) 
+for (j in successful_heatmap) {
+  plot_heatmap(heatmap[j,,], width = N, height = N)
+  heatmap_file <- file.path(path, paste0(prefix, j, "heatmap", ".png"))
+  write_heatmap(heatmap, heatmap_file)
+  
+  label <- paste0(classes[j], ": ", round(predictions[j],3))
+  
+  labels_file <- file.path(path, paste0(prefix, j, "labels", ".png"))
+  
+  png(labels_file, width = 256, height = 50)
+  par(mar = c(0,0,0,0))
+  plot(0:1, 0:1, ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+  text(x = .5, y = .5, cex = 2.1, col = "black", label)
+  dev.off()
+  
+  overlay_file <- file.path(path, paste0(prefix, j, "overlay", ".png"))
+  write_heatmap(heatmap[j,,], overlay_file, 
+                width = 14, height = 14, bg = NA, col = pal_col) 
+  
+  overlaid_file <- file.path(path, paste0(prefix, j, "overlaid", ".png"))
+  image_read(overlay_file) %>%
+    image_resize(geometry, filter = "quadratic") %>% 
+    image_composite(image, operator = "blend", compose_args = "20") %>%
+    image_write(., overlaid_file)
+  
+  full_file <- file.path(path, paste0(prefix, j, "labeled_heatmap", ".png"))
+  combo <- imlist(load.image(overlaid_file), load.image(labels_file))
+  
+  final <- imappend(combo, axis = "y")
+  
+  par(mar = rep(0,4), mfrow = c(1,1))
+  plot(final, axes = F)
+  dev.copy(png, full_file)
+  dev.off()
+  
+  file.remove(overlaid_file, labels_file, overlay_file, heatmap_file)
+}
+}
 
+par(mfrow = c(3,4), mar = c(0,0,0,0))
+plot(imager::load.image(img_path), axes = F)
 
-# Overlay the heatmap and save 
-overlaid_file <- file.path(path, paste0(prefix, "overlaid", ".png"))
-image_read(overlay_file) %>%
-  image_resize(geometry, filter = "quadratic") %>% 
-  image_composite(image, operator = "blend", compose_args = "20") %>%
-  image_write(., overlaid_file)
+for (j in successful_heatmap) {
+  full_file <- file.path(path, paste0(prefix, j, "labeled_heatmap", ".png"))
+  plot(imager::load.image(full_file), axes = F)
+}
 
-
-
-
-full_file <- file.path(path, paste0(prefix, "labeled_heatmap", ".png"))
-combo <- imlist(load.image(overlaid_file), load.image(labels_file))
-
-final <- imappend(combo, axis = "y")
-par(mar = rep(0,4))
-plot(final, axes = F)
-dev.copy(png, full_file)
+dev.copy(png, file.path(path, paste0(prefix, "labeled_heatmap", ".png")))
 dev.off()
-
-
-
-# png(full_file, height = 356, width = 256)
-# 
-# dev.off()
-
-
-#imager::save.image(im = final, file = full_file)
-
-file.remove(overlaid_file, labels_file, overlay_file, heatmap_file)
-
-
 
