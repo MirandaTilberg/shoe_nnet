@@ -5,14 +5,28 @@ library(magick)
 library(viridis)
 
 
-# Set script parameters (weights, image choice, hard-code labels) ----------
+### Set script parameters (choose model/image/directories, add labels?) -----
 
-model_wts_file <- "~/shoe_nnet/test_wts.h5"
-specify_index <- 0 # make this 0 to randomly choose a shoe image
+# File containing weights from model
+model_wts_file <- "home/tiltonm/shoe_nnet/test_wts.h5"
+
+# Should labels be attached to saved heatmaps?
 fixed_labels <- T
 
+# Where to create the heatmap working directory
+dir_path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps"
 
-# Load weights into model structure ----------------------------------------
+# Where the images will come from
+image_dir <- "/home/tiltonm/shoe_nnet/shoes/onehot/test"
+
+# Choose image index (use 0 to randomly select image from image_dir)
+specify_index <- 0
+
+# Choose file to fill in failed heatmaps
+fail_file <- file.path(dir_path, "failure_img.png")
+
+
+### Load weights into model structure --------------------------------------
 
 input <- layer_input(shape = c(256, 256, 3))
 
@@ -33,13 +47,10 @@ model <- keras_model(input, output)
 load_model_weights_hdf5(model, model_wts_file, by_name = T)
 
 
-# Set-up working directory for heatmap process -----------------------------
-
-dir_path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps"
-image_dir <- "/home/tiltonm/shoe_nnet/shoes/onehot/test"
+### Set-up working directory for heatmap process ---------------------------
 
 name <- "shoes-"
-index <- ifelse(specify_index, #use given index, else choose randomly
+index <- ifelse(specify_index,
                 specify_index,
                 sample(1:length(list.files(image_dir)), 1))
 prefix <- paste0(name,as.character(index), "_")
@@ -51,7 +62,7 @@ img_path <- list.files(image_dir, full.names = T)[index]
 file.copy(img_path, path)
 
 
-# Heatmap helper functions -------------------------------------------------
+### Heatmap helper functions -----------------------------------------------
 
 plot_heatmap <- function(heatmap, width = 256, height = 256,
                          bg = "white", col = terrain.colors(12)) {
@@ -71,7 +82,7 @@ write_heatmap <- function(heatmap, filename, width = 256, height = 256,
 }
 
 
-# Use trained model to make heatmap arrays for each class -----------------
+### Use trained model to make heatmap arrays for each class ----------------
 
 classes <- c("bowtie", "chevron", "circle", "line", 
              "polygon", "quad", "star", "text", "triangle")
@@ -92,7 +103,7 @@ heatmap <- array(dim = c(n_classes, 16, 16))
 successful_heatmap <- c()
 
 for (j in 1:n_classes) {
-  # make 16x16 heatmap matrix for each class
+  # Make 16x16 heatmap matrix for each class
   img_output <- model$output[,j]
   
   last_conv_layer <- model %>% get_layer("block5_conv3")
@@ -109,7 +120,7 @@ for (j in 1:n_classes) {
   heatmap[j,,] <- pmax(heatmap[j,,], 0)
   heatmap[j,,] <- heatmap[j,,] / max(heatmap[j,,])
   
-  # check if the heatmap matrix contains any NaN values
+  # Check if the heatmap matrix contains any NaN values
   if (!anyNA(heatmap[j,,])) {
     successful_heatmap <- c(successful_heatmap, j)
   } 
@@ -137,7 +148,7 @@ if (is.null(successful_heatmap)) {
   
   for (j in 1:n_classes){
     
-    # generate label files (e.g. "Class: prob")
+    # Generate label files (e.g. "Class: prob")
     label <- paste0(classes[j],
                     "(", true_labels[j], "): ",
                     round(predictions[j],3))
@@ -150,6 +161,7 @@ if (is.null(successful_heatmap)) {
     text(x = .5, y = .5, cex = 2.1, col = "black", label)
     dev.off()
     
+    # Create overlay files and apply them to the original image
     if(j %in% successful_heatmap){
       
       heatmap_file <- file.path(path, paste0(prefix, j, "heatmap", ".png"))
@@ -166,7 +178,7 @@ if (is.null(successful_heatmap)) {
         image_write(., overlaid_file)
       
     } else {
-      overlaid_file <- file.path(dir_path, "failure_img.png")
+      overlaid_file <- fail_file
     }
     
     full_file <- file.path(path, 
@@ -208,5 +220,6 @@ for (j in 1:n_classes) {
   plot(imager::load.image(full_file), axes = F)
 }
 
-dev.copy(png, file.path(path, paste0(prefix, "labeled_heatmap", ".png")))
+dev.copy(png, file.path(path, paste0("final_", prefix, 
+                                     "labeled_heatmap", ".png")))
 dev.off()
