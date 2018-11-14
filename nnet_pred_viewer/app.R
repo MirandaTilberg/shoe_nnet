@@ -23,20 +23,34 @@ models <- data_frame(
   )
 )
 
-auto_models <- list.files("/models/shoe_nn/TrainedModels", ".[rR]data", recursive = T)
+auto_models <- list.files("/models/shoe_nn/TrainedModels", ".[Rr]data$", recursive = T)
 auto_models <- auto_models[!grepl("fullimage.rdata", auto_models)]
+auto_models <- auto_models[!grepl("train-valid-test-data.Rdata", auto_models)]
+auto_models <- auto_models[file.exists(file.path("/models/shoe_nn/TrainedModels", stringr::str_replace(auto_models, "\\..*$", ".h5")))]
 auto_model_data_date <- stringr::str_extract(auto_models, "201\\d\\d{2}\\d{2}-\\d{2}\\d{2}\\d{2}")
 auto_model_date <- stringr::str_extract(auto_models, "201\\d-\\d{2}-\\d{2}[ _]\\d{2}:\\d{2}:\\d{2}")
 auto_model_nicedate <- auto_model_date %>%
   stringr::str_replace("_", " ")
 
-file.symlink(from = file.path("/models/shoe_nn/RProcessedImages",
-                              unique(auto_model_data_date)),
-             to = file.path(getwd(), "www", unique(auto_model_data_date)))
+auto_model_name <- stringr::str_extract(auto_models, "(vgg16_.*_\\d{1,3})\\..*$") %>%
+  stringr::str_replace("vgg16_onehot(.*?)_(\\d{1,}class)_\\d{1,}\\..*$", "\\1 \\2")
+
+tmp <- sapply(unique(auto_model_data_date), function(x) {
+  fp <- file.path("/models/shoe_nn/RProcessedImages", x)
+  fpnew <- file.path(getwd(), "www", x)
+  if (!dir.exists(fpnew)) {
+    file.symlink(from = fp, to = fpnew)
+  } else {
+    TRUE
+  }
+})
+# file.symlink(from = file.path("/models/shoe_nn/RProcessedImages",
+#                               unique(auto_model_data_date)),
+#              to = file.path(getwd(), "www", unique(auto_model_data_date)))
 
 
 models2 <- data_frame(
-  name = paste(auto_model_nicedate, "10class aug"),
+  name = paste(auto_model_nicedate, auto_model_name),
   imfolder = file.path(auto_model_data_date, "test"),
   data = auto_models
 )
