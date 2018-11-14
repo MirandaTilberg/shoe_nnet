@@ -114,8 +114,10 @@ server <- function(input, output) {
     whole_shoe <- stringr::str_replace_all(fnames, "^[[a-z\\(\\)RE]*_]*-[\\d\\.]*-", "")
     image_urls <- sprintf("https://bigfoot.csafe.iastate.edu/LabelMe/tool.html?actions=a&folder=Shoes&image=%s", whole_shoe)
 
+    imf <- stringr::str_replace(model_data()$imfolder, "test", "images")
+    message(imf)
     image_tags <- sprintf('<img src ="%s" width = "100%%"/>',
-                          file.path("imgs", stringr::str_replace(model_data()$imfolder, "test", "images"), fnames))
+                          file.path("imgs", imf, fnames))
 
     hyperlinks <- sprintf('<a href="%s" target="_blank">%s</a>', image_urls, image_tags)
 
