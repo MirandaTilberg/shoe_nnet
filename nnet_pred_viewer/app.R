@@ -35,15 +35,6 @@ auto_model_nicedate <- auto_model_date %>%
 auto_model_name <- stringr::str_extract(auto_models, "(vgg16_.*_\\d{1,3})\\..*$") %>%
   stringr::str_replace("vgg16_onehot(.*?)_(\\d{1,}class)_\\d{1,}\\..*$", "\\1 \\2")
 
-tmp <- sapply(unique(auto_model_data_date), function(x) {
-  fp <- file.path("/models/shoe_nn/RProcessedImages", x)
-  fpnew <- file.path(getwd(), "www", x)
-  if (!dir.exists(fpnew)) {
-    file.symlink(from = fp, to = fpnew)
-  } else {
-    TRUE
-  }
-})
 # file.symlink(from = file.path("/models/shoe_nn/RProcessedImages",
 #                               unique(auto_model_data_date)),
 #              to = file.path(getwd(), "www", unique(auto_model_data_date)))
@@ -54,6 +45,17 @@ models2 <- data_frame(
   imfolder = file.path(auto_model_data_date, "test"),
   data = auto_models
 )
+
+tmp <- sapply(models2$imfolder, function(y) {
+  x <- stringr::str_replace(y, "/test", "")
+  fp <- file.path("/models/shoe_nn/RProcessedImages", x)
+  fpnew <- file.path(getwd(), "www", x)
+  if (!dir.exists(fpnew)) {
+    file.symlink(from = fp, to = fpnew)
+  } else {
+    TRUE
+  }
+})
 
 models <- bind_rows(models, models2)
 ui <- fluidPage(
