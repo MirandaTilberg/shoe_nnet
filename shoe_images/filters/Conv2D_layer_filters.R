@@ -86,25 +86,26 @@ generate_pattern <- function(layer_name, filter_index, size = 150) {
   # Run gradient ascent for 40 steps
   step <- 1
   for (i in 1:40) {
-    #cat(i, ", ", sep = "")
+    cat(i, ", ", sep = "")
     c(loss_value, grads_value) %<-% iterate(list(input_img_data))
     input_img_data <- input_img_data + (grads_value * step) 
   }
-  #cat("\n")
+  cat("\n")
   img <- input_img_data[1,,,]
   deprocess_image(img) 
 }
 
 library(grid)
 par(mfrow = c(1,1))
-grid.raster(generate_pattern(layer_name, 1))
+#grid.raster(generate_pattern(layer_name, 1))
+grid.raster(generate_pattern("block5_conv3", 41))
 
 library(grid)
 library(gridExtra)
 dir <- file.path("/home/tiltonm/shoe_nnet/shoe_images/filters",
                  paste(model_base, "filters", sep = "_"))
 dir.create(dir)
-for (layer_name in layers) {
+for (layer_name in sample(layers)) {
   img_file <- paste0(dir, "/", layer_name, ".png")
   if(!file.exists(img_file)) {
     cat(layer_name, ":\n", sep="") 
