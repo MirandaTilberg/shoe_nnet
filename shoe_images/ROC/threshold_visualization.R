@@ -1,8 +1,8 @@
 library(magrittr)
 library(ggplot2)
+source("/home/tiltonm/shoe_nnet/helper_scripts/get_most_recent.R")
 
-#load("/models/shoe_nn/TrainedModels/20181011-145609/2018-10-14_18:05:19_vgg16_onehotaug_9class_256.Rdata")
-load("/models/shoe_nn/TrainedModels/20181019-124443/2018-10-21_17:55:08_vgg16_onehotaug_9class_256.Rdata")
+load(get_most_recent(verbose = T))
 classes <- colnames(preds)
 n_classes <- length(classes)
 preds <- preds %>% round(2)

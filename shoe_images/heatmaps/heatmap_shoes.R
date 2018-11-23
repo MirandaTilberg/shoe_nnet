@@ -3,24 +3,25 @@ library(imager)
 library(tidyr)
 library(magick) 
 library(viridis)
+source("/home/tiltonm/shoe_nnet/helper_scripts/get_most_recent.R")
 
 
 ### Set script parameters (choose model/image/directories, add labels?) -----
-
-# File containing weights from model
-model_wts_file <- "home/tiltonm/shoe_nnet/test_wts.h5"
-
-# Should labels be attached to saved heatmaps?
-fixed_labels <- T
-
-# Where to create the heatmap working directory
-dir_path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps"
 
 # Where the images will come from
 image_dir <- "/home/tiltonm/shoe_nnet/shoes/onehot/test"
 
 # Choose image index (use 0 to randomly select image from image_dir)
-specify_index <- 0
+specify_index <- 5000
+
+# File containing weights from model
+model_wts_file <- get_most_recent("weights", verbose = T)
+
+# Should labels be attached to saved heatmaps?
+fixed_labels <- T
+
+# Where to create the heatmap working directory
+dir_path <- "/home/tiltonm/shoe_nnet/shoe_images/heatmaps/shoes"
 
 # Choose file to fill in failed heatmaps
 fail_file <- file.path(dir_path, "failure_img.png")
@@ -223,3 +224,5 @@ for (j in 1:n_classes) {
 dev.copy(png, file.path(path, paste0("final_", prefix, 
                                      "labeled_heatmap", ".png")))
 dev.off()
+dev.off()
+index
