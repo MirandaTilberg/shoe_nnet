@@ -9,10 +9,15 @@ source("/home/tiltonm/shoe_nnet/helper_scripts/get_most_recent.R")
 ### Set script parameters (choose model/image/directories, add labels?) -----
 
 # Where the images will come from
-image_dir <- "/home/tiltonm/shoe_nnet/shoes/onehot/test"
+# image_dir <- file.path("/models/shoe_nn/RProcessedImages",
+#                        list.files("/models/shoe_nn/RProcessedImages/", 
+#                                   pattern = "201") %>% max(), 
+#                        "test")
+image_dir <- "/models/shoe_nn/RProcessedImages/20181126-141656/test"
 
 # Choose image index (use 0 to randomly select image from image_dir)
-specify_index <- 5000
+specify_index <- 1275 #1343 #2504
+# grep("brooks-glycerin-16-white-blue-pink_product_9045817_color_43081.jpg", list.files(image_dir))
 
 # File containing weights from model
 model_wts_file <- get_most_recent("weights", verbose = T)
@@ -38,15 +43,19 @@ conv_base <- application_vgg16(
 
 output <- conv_base$output %>%
   layer_flatten(input_shape = input) %>%
-  layer_dense(units = 256, activation = "relu",
-              input_shape = 8 * 8 * 512) %>%
-  layer_dropout(rate = 0.5) %>%
-  layer_dense(units = 9, activation = "sigmoid")
+  layer_dense(units = 256, 
+              activation = "relu",
+              input_shape = 8 * 8 * 512,
+              name = "dense_1") %>%
+  layer_dropout(rate = 0.5, 
+                name = "dropout_1") %>%
+  layer_dense(units = 9, 
+              activation = "sigmoid", 
+              name = "dense_2")
 
 model <- keras_model(input, output)
 
 load_model_weights_hdf5(model, model_wts_file, by_name = T)
-
 
 ### Set-up working directory for heatmap process ---------------------------
 
@@ -65,14 +74,6 @@ file.copy(img_path, path)
 
 ### Heatmap helper functions -----------------------------------------------
 
-plot_heatmap <- function(heatmap, width = 256, height = 256,
-                         bg = "white", col = terrain.colors(12)) {
-  op = par(mar = c(0,0,0,0))
-  on.exit({par(op)}, add = TRUE)
-  rotate <- function(x) t(apply(x, 2, rev))
-  image(rotate(heatmap), axes = FALSE, asp = 1, col = col)
-}
-
 write_heatmap <- function(heatmap, filename, width = 256, height = 256,
                           bg = "white", col = terrain.colors(12)) {
   png(filename, width = width, height = height, bg = bg)
@@ -89,13 +90,15 @@ classes <- c("bowtie", "chevron", "circle", "line",
              "polygon", "quad", "star", "text", "triangle")
 n_classes <- length(classes)
 
-img <- load.image(img_path)
+img <- jpeg::readJPEG(img_path)
 dim(img) <- c(1, 256, 256, 3)
 
 predictions <- model %>% 
-  predict(img) %>% 
+  predict(img, verbose = T) %>% 
   as.vector() %>% 
   set_names(classes)
+
+round(predictions,3)
 
 true_labels <- sapply(classes, function(x){grepl(x, basename(img_path))}) %>%
   as.numeric()
@@ -135,7 +138,7 @@ if (is.null(successful_heatmap)) {
   unlink(path, recursive = T)
   cat("No heatmaps were successful\n")
   
-} else{
+} else {
   
   cat("Successful heatmaps:", successful_heatmap)
   
@@ -146,21 +149,32 @@ if (is.null(successful_heatmap)) {
   pal <- col2rgb(viridis(20), alpha = TRUE) 
   alpha <- floor(seq(0, 255, length = ncol(pal))) 
   pal_col <- rgb(t(pal), alpha = alpha, maxColorValue = 255)
+  correct_pal <- colorRampPalette(c("white", "cornflowerblue"))
+  incorrect_pal <- colorRampPalette(c("white", "grey40"))
   
   for (j in 1:n_classes){
     
     # Generate label files (e.g. "Class: prob")
-    label <- paste0(classes[j],
-                    "(", true_labels[j], "): ",
+    label <- paste0(tools::toTitleCase(classes[j]),
+                    #"(", true_labels[j], "): ",
+                    ": ",
                     round(predictions[j],3))
     
     labels_file <- file.path(path, paste0(prefix, j, "labels", ".png"))
     
-    png(labels_file, width = 256, height = 50)
-    par(mar = c(0,0,0,0))
+    
+    intensity <- 100*round(predictions[j], 2) + 1
+    
+    png(labels_file, width = 256, height = 50, res = 90)
+    par(mar = c(0,0,0,0), 
+        bg = ifelse(true_labels[j], 
+                    correct_pal(131)[30+intensity], 
+                    incorrect_pal(101)[intensity]))
     plot(0:1, 0:1, ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
-    text(x = .5, y = .5, cex = 2.1, col = "black", label)
+    text(labels = label, x = .5, y = .5, cex = 2.1, 
+         col = ifelse((intensity > 60 && !true_labels[j]), "white", "black"))
     dev.off()
+    par(bg = "white")
     
     # Create overlay files and apply them to the original image
     if(j %in% successful_heatmap){
@@ -196,10 +210,14 @@ if (is.null(successful_heatmap)) {
     }
     
     # plot and save each image individually
-    par(mar = rep(0,4), mfrow = c(1,1))
+    par(mar = rep(0,4), mfrow = c(1,1),
+        bg = ifelse(true_labels[j], 
+                    correct_pal(131)[30+intensity], 
+                    incorrect_pal(101)[intensity]))
     plot(final, axes = F)
-    dev.copy(png, full_file)
+    dev.copy(png, full_file, res = 300)
     dev.off()
+    par(bg = "white")
     
     # clean out intermediate files
     if(j %in% successful_heatmap) {
@@ -211,18 +229,34 @@ if (is.null(successful_heatmap)) {
   }
 }
 
-# plot all images in one grid and save as one full file
+# plot all images in one grid (sorted and unsorted) and save as full file
 par(mfrow = c(3,4), mar = c(0,0,0,0))
 plot(imager::load.image(img_path), axes = F)
-
-for (j in 1:n_classes) {
-  full_file <- file.path(path, paste0(prefix, classes[j],
+for (class in classes) {
+  full_file <- file.path(path, paste0(prefix, class,
                                       "_labeled_heatmap", ".png"))
   plot(imager::load.image(full_file), axes = F)
 }
 
 dev.copy(png, file.path(path, paste0("final_", prefix, 
-                                     "labeled_heatmap", ".png")))
+                                     "labeled_heatmap", ".png")),
+         height = 1480, width = 1920, res = 300)
 dev.off()
 dev.off()
+
+
+par(mfrow = c(3,4), mar = c(0,0,0,0))
+plot(imager::load.image(img_path), axes = F)
+for (class in names(sort(predictions, decreasing = T))) {
+  full_file <- file.path(path, paste0(prefix, class,
+                                      "_labeled_heatmap", ".png"))
+  plot(imager::load.image(full_file), axes = F)
+}
+
+dev.copy(png, file.path(path, paste0("final_sorted_", prefix, 
+                                     "labeled_heatmap", ".png")),
+         height = 1480, width = 1920, res = 300)
+dev.off()
+dev.off()
+
 index

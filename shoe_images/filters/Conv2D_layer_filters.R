@@ -97,8 +97,7 @@ generate_pattern <- function(layer_name, filter_index, size = 150) {
 
 library(grid)
 par(mfrow = c(1,1))
-#grid.raster(generate_pattern(layer_name, 1))
-grid.raster(generate_pattern("block5_conv3", 41))
+grid.raster(generate_pattern(layer_name, 1))
 
 library(grid)
 library(gridExtra)

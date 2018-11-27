@@ -93,7 +93,7 @@ plot_roc <- function() {
   par(mfrow = c(3,3), mar = rep(2, 4))
   for (i in 1:9) {
     plot(false_pos[i,], true_pos[i,], type = "l", 
-         main = paste0(classes[i], " (AUC = ", round(AUC[i],2), ")"))
+         main = paste0(tools::toTitleCase(classes[i]), " (AUC = ", round(AUC[i],2), ")"))
     lines(s,s, lty = "dashed", col = "gray30")
   }
 }
@@ -112,7 +112,7 @@ plot_ratio <- function() {
   par(mfrow = c(3,3), mar = rep(2, 4))
   for (i in 1:9) {
     plot(s, ratio[i,], type = "l", 
-         main = paste0(classes[i]),
+         main = paste0(tools::toTitleCase(classes[i])),
          ylim = c(0, round(2*max(apply(ratio, 1, median)))))
     abline(v =.2, lty = "dashed", col = "gray30")
   }
@@ -121,7 +121,11 @@ plot_ratio()
 
 
 
-#plot_matrix_thresholds()
+plot_matrix_thresholds()
 plot_stacked_thresholds()
+
+png(paste0("~/shoe_nnet/AUC_", Sys.Date(), ".png"),
+       height = 4.5, width = 6, units = "in", res = 300)
 plot_roc()
+dev.off()
 plot_ratio()
