@@ -2,7 +2,8 @@ library(magrittr)
 library(ggplot2)
 source("/home/tiltonm/shoe_nnet/helper_scripts/get_most_recent.R")
 
-load(get_most_recent(verbose = T))
+predictions_file <- get_most_recent(verbose = T)
+load(predictions_file)
 classes <- colnames(preds)
 n_classes <- length(classes)
 preds <- preds %>% round(2)
@@ -124,7 +125,8 @@ plot_ratio()
 plot_matrix_thresholds()
 plot_stacked_thresholds()
 
-png(paste0("~/shoe_nnet/AUC_", Sys.Date(), ".png"),
+png(paste0("~/shoe_nnet/shoe_images/ROC/AUC_",
+           names(predictions_file), ".png"),
        height = 4.5, width = 6, units = "in", res = 300)
 plot_roc()
 dev.off()
