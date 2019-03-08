@@ -2,6 +2,8 @@ library(lubridate)
 library(stringr)
 library(tidyverse)
 
+#source("/home/tiltonm/shoe_nnet/helper_scripts/get_image_directory.R")
+
 get_image_directory <- function(date = NULL, type = c("full", "train",
                                 "validation", "test")) {
   
@@ -53,4 +55,5 @@ get_image_directory <- function(date = NULL, type = c("full", "train",
   }
 }
 
-get_image_directory(type = "test")
+#get_image_directory(type = "full")
+#get_image_directory(type = "test")

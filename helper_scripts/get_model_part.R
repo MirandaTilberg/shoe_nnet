@@ -2,8 +2,10 @@ library(lubridate)
 library(stringr)
 library(tidyverse)
 
+#source("/home/tiltonm/shoe_nnet/helper_scripts/get_model_part.R")
+
 get_model_part <- function(date = NULL, part = c("model", "weights", 
-                          "predictions", "full image")) {
+                          "predictions", "history", "full image")) {
   
   # List all model folders, with and without paths
   model_folders_full <- list.files("/models/shoe_nn/TrainedModels",
@@ -59,9 +61,10 @@ get_model_part <- function(date = NULL, part = c("model", "weights",
                     "weights" = "_256-weights",
                     "model" = "_256.h5",
                     "predictions" = "_256.Rdata",
+                    "history" = "256-history.Rdata",
                     "full image" = "fullimage")
   
-  file <- list.files(folder_path, pattern = pattern)
+  file <- list.files(folder_path, pattern = pattern, full.names = T)
   
   # If no matching file is found, return error
   if(length(file) < 1) {
@@ -71,23 +74,23 @@ get_model_part <- function(date = NULL, part = c("model", "weights",
   }
 }
 
-# Test incorrect date format
-get_model_part(part = "weights", date = "1-6-2019")
-
-# Test no date
-get_model_part(part = "weights")
-
-# Test value that is not a date
-get_model_part(part = "weights", date = 7)
-
-# Test date that had no model
-get_model_part(part = "weights", date = "2019-1-6")
-
-# Test date with multiple folders
-get_model_part(part = "model", date = "2018-11-18")
-
-# Test part that isn't an option
-get_model_part(part = "cow", date = "2018-11-26")
-
-# Test part that doesn't exist for given date
-get_model_part(part = "weights", date = "2018-9-24")
+# # Test incorrect date format
+# get_model_part(part = "weights", date = "1-6-2019")
+# 
+# # Test no date
+# get_model_part(part = "weights")
+# 
+# # Test value that is not a date
+# get_model_part(part = "weights", date = 7)
+# 
+# # Test date that had no model
+# get_model_part(part = "weights", date = "2019-1-6")
+# 
+# # Test date with multiple folders
+# get_model_part(part = "model", date = "2018-11-18")
+# 
+# # Test part that isn't an option
+# get_model_part(part = "cow", date = "2018-11-26")
+# 
+# # Test part that doesn't exist for given date
+# get_model_part(part = "weights", date = "2018-9-24")
